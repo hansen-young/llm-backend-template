@@ -1,0 +1,27 @@
+_exclude:
+    - "copier.yml"
+    - "README.md"
+    - ".git"
+
+_jinja_extensions:
+    - jinja2_slug.SlugExtension
+
+project_name:
+    type: "str"
+    help: "What is your project name?"
+
+python_version:
+    type: "str"
+    help: "Which Python version do you want to use? (>=3.10)"
+    default: "3.10"
+    validator: >-
+        {% set p = python_version.split('.') %}
+        {% if p|length != 2 %}
+        Accepted format: X.Y (e.g. 3.10)
+        {% else %}
+            {% set major = p[0]|int %}
+            {% set minor = p[1]|int %}
+            {% if (major, minor) < (3, 10) %}
+            Python version must be 3.10 or higher.
+            {% endif %}
+        {% endif %}

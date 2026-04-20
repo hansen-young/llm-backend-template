@@ -1,0 +1,22 @@
+[project]
+name = "{{project_name | slug}}"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">={{python_version}}"
+dependencies = [
+    "fastapi>=0.129",
+    "uvicorn>=0.40",
+    "openai>=2.15",
+    "pydantic-settings>=2",
+    "uvicorn>=0.40",
+]
+
+[tool.uv]
+exclude-newer = "7 days"
+
+[dependency-groups]
+dev = [
+    "ollama>=0.6.1",
+    "python-dotenv>=1.2.2",
+]
