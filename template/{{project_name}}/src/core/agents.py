@@ -1,4 +1,3 @@
-import inspect
 from abc import ABC, abstractmethod
 from time import time
 from uuid import uuid4
@@ -6,9 +5,8 @@ from typing import Self
 
 from openai import AzureOpenAI
 from openai.types.chat import ChatCompletionFunctionToolParam
-from pydantic import BaseModel, Field
 
-from utils import function_to_json_schema
+from utils import create_message, function_to_json_schema
 from utils.types import (
     ChatResponse,
     ChatResponseMessage,
@@ -30,16 +28,15 @@ class AgentConfig:
 
 
 class BaseAgent(ABC):
-    def __init__(self, config: AgentConfig | None = None):
+    def __init__(self, name: str, config: AgentConfig | None = None):
+        self.name = name
         self.config = config or AgentConfig()
 
     @abstractmethod
-    async def run(self, messages: Messages) -> ChatResponse:
-        raise NotImplementedError("`run` method is not implemented")
+    async def run(self, messages: Messages) -> ChatResponse: ...
 
     # @abstractmethod
-    # async def run_async(self, messages: Messages):
-    #     raise NotImplementedError("`run_async` method is not implemented")
+    # async def run_async(self, messages: Messages): ...
 
     @abstractmethod
     def compile(self) -> Self: ...
@@ -52,11 +49,15 @@ class BaseAgent(ABC):
 
 class AzureOpenAIAgent(BaseAgent):
     def __init__(
-        self, azure_client: AzureOpenAI, model: str, config: AgentConfig | None = None
+        self,
+        name: str,
+        azure_client: AzureOpenAI,
+        azure_deployment: str,
+        config: AgentConfig | None = None,
     ):
+        super().__init__(name, config)
         self.client = azure_client
-        self.model = model
-        self.config = config or AgentConfig()
+        self.deployment = azure_deployment
         self.kwargs = {}
 
     def _adapt_toolset(self, toolset: Toolset):
@@ -90,24 +91,28 @@ class AzureOpenAIAgent(BaseAgent):
 
     async def run(self, messages: Messages) -> ChatResponse:
         if self.config.system_prompt:
-            messages = [
-                {"role": "system", "content": self.config.system_prompt},
-                *messages,
-            ]
+            messages = [create_message("system", self.config.system_prompt), *messages]
 
         return self.client.chat.completions.create(
-            model=self.model, messages=messages, **self.kwargs
+            model=self.deployment, messages=messages, **self.kwargs
         )
 
 
 class EchoAgent(BaseAgent):
     async def run(self, messages: Messages) -> ChatResponse:
-        if messages:
-            reply_content = "Echo: " + messages[-1]["content"]
-        else:
-            reply_content = (
-                "Hi, I'm EchoAgent! Send me a message and I'll echo it back to you."
-            )
+        if not messages:
+            raise RuntimeError("No messages provided to the agent")
+
+        if messages[-1]["role"] != "user":
+            raise RuntimeError("The last message must be from the user")
+
+        if "content" not in messages[-1]:
+            raise RuntimeError("The last user message must have content")
+
+        if not isinstance(messages[-1]["content"], str):
+            raise RuntimeError("The content of the last user message must be a string")
+
+        reply_content = "Echo: " + messages[-1]["content"]
 
         return ChatResponse(
             id=str(uuid4()),

@@ -1,7 +1,4 @@
-_exclude:
-    - "copier.yml"
-    - "README.md"
-    - ".git"
+_subdirectory: "template"
 
 _jinja_extensions:
     - jinja2_slug.SlugExtension

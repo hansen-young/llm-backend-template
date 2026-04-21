@@ -2,15 +2,17 @@ from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
-from utils.types import Message, Messages
+from utils import create_message
+from utils.types import Messages
 
 
 class Session(BaseModel):
     id: str
     messages: Messages
 
-    def add_message(self, role: str, content: str | None, **kwargs):
-        self.messages.append({"role": role, "content": content, **kwargs})  # type: ignore
+    def add_message(self, role, content, **kwargs):
+        message = create_message(role, content, **kwargs)
+        self.messages.append(message)
 
 
 class BaseSessionService(ABC):
