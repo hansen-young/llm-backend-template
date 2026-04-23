@@ -4,13 +4,21 @@ import json
 from typing import Any, Awaitable, Callable, Literal, ParamSpec, TypeAlias, TypeVar
 from typing_extensions import TypedDict, Required, Optional
 
+
 from openai.types.chat import (
     ChatCompletion,
+    ChatCompletionChunk,
     ChatCompletionMessage,
     ChatCompletionMessageParam,
+    ChatCompletionMessageToolCallUnion,
     ChatCompletionFunctionToolParam,
+    ChatCompletionMessageFunctionToolCall,
 )
 from openai.types.chat.chat_completion import Choice
+from openai.types.chat.chat_completion_chunk import (
+    Choice as ChoiceChunk,
+    ChoiceDelta as ChoiceDeltaChunk,
+)
 
 # from openai.types.shared_params.function_definition import FunctionDefinition
 from pydantic import TypeAdapter
@@ -19,7 +27,7 @@ Message: TypeAlias = ChatCompletionMessageParam
 Messages: TypeAlias = list[ChatCompletionMessageParam]
 ChatResponse: TypeAlias = ChatCompletion
 ChatResponseMessage: TypeAlias = ChatCompletionMessage
-# todo: ChatResponseChunk
+ChatResponseChunk: TypeAlias = ChatCompletionChunk
 
 
 P = ParamSpec("P")  # function parameters

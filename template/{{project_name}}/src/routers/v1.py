@@ -1,9 +1,11 @@
+import json
 from uuid import uuid4
 from typing import Annotated
 
 from fastapi import Depends
 from fastapi.responses import JSONResponse
 from fastapi.routing import APIRouter
+from fastapi.sse import EventSourceResponse, ServerSentEvent
 from pydantic import BaseModel, Field
 
 from bot import get_runner
@@ -18,7 +20,6 @@ V1Router = APIRouter(prefix="/api/v1", tags=["v1"])
 class ChatRequest(BaseModel):
     message: str
     session_id: Annotated[str, Field(default_factory=lambda: str(uuid4()))]
-    stream: bool = False
 
 
 class ChatResponse(BaseModel):
@@ -33,6 +34,21 @@ class ChatResponse(BaseModel):
 async def chat(body: ChatRequest, runner: Annotated[BaseRunner, Depends(get_runner)]):
     message = await runner.run(session_id=body.session_id, message=body.message)
     return ChatResponse(session_id=body.session_id, message=message)
+
+
+@V1Router.post("/chat/stream", tags=["chat"], response_class=EventSourceResponse)
+async def chat_stream(
+    body: ChatRequest, runner: Annotated[BaseRunner, Depends(get_runner)]
+):
+    async for chunk in runner.run_stream(
+        session_id=body.session_id, message=body.message
+    ):
+        yield chunk
+
+    yield ServerSentEvent(
+        data=json.dumps({"session_id": body.session_id}),
+        event="end",
+    )
 
 
 @V1Router.get("/session/{session_id}", tags=["session"])
