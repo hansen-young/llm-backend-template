@@ -3,7 +3,7 @@ from time import time
 from uuid import uuid4
 from typing import AsyncGenerator, Self
 
-from openai import AzureOpenAI
+from openai import AsyncAzureOpenAI
 from openai.types.chat import ChatCompletionFunctionToolParam
 
 from utils import create_message, function_to_json_schema
@@ -56,7 +56,7 @@ class AzureOpenAIAgent(BaseAgent):
     def __init__(
         self,
         name: str,
-        azure_client: AzureOpenAI,
+        azure_client: AsyncAzureOpenAI,
         azure_deployment: str,
         config: AgentConfig | None = None,
     ):
@@ -98,7 +98,7 @@ class AzureOpenAIAgent(BaseAgent):
         if self.config.system_prompt:
             messages = [create_message("system", self.config.system_prompt), *messages]
 
-        return self.client.chat.completions.create(
+        return await self.client.chat.completions.create(
             model=self.deployment, messages=messages, **self.kwargs
         )
 
@@ -106,7 +106,7 @@ class AzureOpenAIAgent(BaseAgent):
         if self.config.system_prompt:
             messages = [create_message("system", self.config.system_prompt), *messages]
 
-        for chunk in self.client.chat.completions.create(
+        async for chunk in await self.client.chat.completions.create(
             model=self.deployment, messages=messages, stream=True, **self.kwargs
         ):
             yield chunk
